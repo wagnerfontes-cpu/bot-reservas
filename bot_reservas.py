@@ -31,6 +31,21 @@ def ler_planilha(arquivo):
     df = df.rename(columns=COLUNAS)
     df = df[[c for c in COLUNAS.values() if c in df.columns]]
     df = df.dropna(how="all").reset_index(drop=True)
+    # Formata data para dd/mm/aaaa
+    if "Data da reserva" in df.columns:
+        def formatar_data(val):
+            if pd.isna(val) or str(val).strip() == "":
+                return ""
+            try:
+                if hasattr(val, 'strftime'):
+                    return val.strftime("%d/%m/%Y")
+                data_limpa = str(val).replace("/", "").replace("-", "").strip()
+                if len(data_limpa) == 8 and data_limpa.isdigit():
+                    return datetime.strptime(data_limpa, "%d%m%Y").strftime("%d/%m/%Y")
+            except Exception:
+                pass
+            return str(val)
+        df["Data da reserva"] = df["Data da reserva"].apply(formatar_data)
     df = df.astype(str).replace("nan", "")
     return df
 
@@ -90,9 +105,13 @@ if st.session_state.etapa == "upload":
             if st.button("Processar informações"):
                 erros = validar_dados(df)
                 if erros:
-                    st.error("Corrija os erros abaixo antes de continuar:")
+                    st.error("Foram encontrados erros nos dados. Corrija abaixo ou ajuste a planilha e suba novamente:")
                     for erro in erros:
                         st.warning(erro)
+                    st.session_state.df = df
+                    if st.button("✏️ Corrigir diretamente na tela"):
+                        st.session_state.etapa = "editar"
+                        st.rerun()
                 else:
                     st.session_state.df = df
                     st.session_state.etapa = "processar"
@@ -164,3 +183,4 @@ elif st.session_state.etapa == "concluido":
         st.session_state.etapa = "upload"
         st.session_state.df = None
         st.rerun()
+
