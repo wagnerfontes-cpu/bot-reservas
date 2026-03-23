@@ -144,15 +144,22 @@ elif st.session_state.etapa == "processar":
 # ─── ETAPA 3: EDIÇÃO ────────────────────────────────────────────────────────
 elif st.session_state.etapa == "editar":
     st.subheader("Editar dados")
+
+    if st.session_state.erros_validacao:
+        st.error("Corrija os erros abaixo antes de continuar:")
+        for erro in st.session_state.erros_validacao:
+            st.warning(erro)
+
     df_editado = st.data_editor(st.session_state.df, use_container_width=True, num_rows="dynamic")
 
     if st.button("Salvar alterações"):
         erros = validar_dados(df_editado)
         if erros:
-            st.error("Corrija os erros abaixo antes de continuar:")
-            for erro in erros:
-                st.warning(erro)
+            st.session_state.erros_validacao = erros
+            st.session_state.df = df_editado
+            st.rerun()
         else:
+            st.session_state.erros_validacao = []
             st.session_state.df = df_editado
             st.session_state.etapa = "processar"
             st.rerun()
