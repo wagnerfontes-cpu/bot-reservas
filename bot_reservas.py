@@ -91,6 +91,8 @@ if "etapa" not in st.session_state:
     st.session_state.etapa = "upload"
 if "df" not in st.session_state:
     st.session_state.df = None
+if "erros_validacao" not in st.session_state:
+    st.session_state.erros_validacao = []
 
 # ─── ETAPA 1: UPLOAD ────────────────────────────────────────────────────────
 if st.session_state.etapa == "upload":
@@ -102,19 +104,24 @@ if st.session_state.etapa == "upload":
         if not df.empty:
             st.success(f"Planilha lida com sucesso! {len(df)} registro(s) encontrado(s).")
             st.dataframe(df, use_container_width=True)
+
             if st.button("Processar informações"):
                 erros = validar_dados(df)
+                st.session_state.df = df
                 if erros:
-                    st.error("Foram encontrados erros nos dados. Corrija abaixo ou ajuste a planilha e suba novamente:")
-                    for erro in erros:
-                        st.warning(erro)
-                    st.session_state.df = df
-                    if st.button("✏️ Corrigir diretamente na tela"):
-                        st.session_state.etapa = "editar"
-                        st.rerun()
+                    st.session_state.erros_validacao = erros
                 else:
-                    st.session_state.df = df
+                    st.session_state.erros_validacao = []
                     st.session_state.etapa = "processar"
+                st.rerun()
+
+            if st.session_state.erros_validacao:
+                st.error("Foram encontrados erros. Corrija abaixo ou ajuste a planilha e suba novamente:")
+                for erro in st.session_state.erros_validacao:
+                    st.warning(erro)
+                if st.button("✏️ Corrigir diretamente na tela"):
+                    st.session_state.erros_validacao = []
+                    st.session_state.etapa = "editar"
                     st.rerun()
         else:
             st.error("Não foi possível ler os dados da planilha. Verifique o formato.")
@@ -183,4 +190,3 @@ elif st.session_state.etapa == "concluido":
         st.session_state.etapa = "upload"
         st.session_state.df = None
         st.rerun()
-
