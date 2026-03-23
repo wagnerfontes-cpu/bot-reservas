@@ -34,6 +34,43 @@ def ler_planilha(arquivo):
     df = df.astype(str).replace("nan", "")
     return df
 
+def validar_dados(df):
+    erros = []
+    campos_obrigatorios = list(COLUNAS.values())
+
+    for i, row in df.iterrows():
+        linha = i + 1
+
+        # Campos obrigatórios
+        for campo in campos_obrigatorios:
+            if campo not in row or str(row[campo]).strip() == "":
+                erros.append(f"Linha {linha}: campo **{campo}** está vazio.")
+
+        # Validação de data (dd/mm/aaaa)
+        data_str = str(row.get("Data da reserva", "")).strip()
+        if data_str:
+            # Aceita tanto dd/mm/aaaa quanto ddmmaaaa
+            data_limpa = data_str.replace("/", "").replace("-", "")
+            if len(data_limpa) == 8 and data_limpa.isdigit():
+                try:
+                    datetime.strptime(data_limpa, "%d%m%Y")
+                except ValueError:
+                    erros.append(f"Linha {linha}: **Data da reserva** inválida. Use o formato dd/mm/aaaa.")
+            else:
+                erros.append(f"Linha {linha}: **Data da reserva** inválida. Use o formato dd/mm/aaaa.")
+
+        # Validação de valor numérico e maior que zero
+        valor_str = str(row.get("Valor", "")).strip()
+        if valor_str:
+            try:
+                valor = float(valor_str.replace(",", "."))
+                if valor <= 0:
+                    erros.append(f"Linha {linha}: **Valor** deve ser maior que zero.")
+            except ValueError:
+                erros.append(f"Linha {linha}: **Valor** deve ser numérico.")
+
+    return erros
+
 # Inicializa estado
 if "etapa" not in st.session_state:
     st.session_state.etapa = "upload"
@@ -51,9 +88,15 @@ if st.session_state.etapa == "upload":
             st.success(f"Planilha lida com sucesso! {len(df)} registro(s) encontrado(s).")
             st.dataframe(df, use_container_width=True)
             if st.button("Processar informações"):
-                st.session_state.df = df
-                st.session_state.etapa = "processar"
-                st.rerun()
+                erros = validar_dados(df)
+                if erros:
+                    st.error("Corrija os erros abaixo antes de continuar:")
+                    for erro in erros:
+                        st.warning(erro)
+                else:
+                    st.session_state.df = df
+                    st.session_state.etapa = "processar"
+                    st.rerun()
         else:
             st.error("Não foi possível ler os dados da planilha. Verifique o formato.")
 
@@ -78,9 +121,15 @@ elif st.session_state.etapa == "editar":
     df_editado = st.data_editor(st.session_state.df, use_container_width=True, num_rows="dynamic")
 
     if st.button("Salvar alterações"):
-        st.session_state.df = df_editado
-        st.session_state.etapa = "processar"
-        st.rerun()
+        erros = validar_dados(df_editado)
+        if erros:
+            st.error("Corrija os erros abaixo antes de continuar:")
+            for erro in erros:
+                st.warning(erro)
+        else:
+            st.session_state.df = df_editado
+            st.session_state.etapa = "processar"
+            st.rerun()
 
 # ─── ETAPA 4: RESUMO E CONFIRMAÇÃO FINAL ────────────────────────────────────
 elif st.session_state.etapa == "resumo":
