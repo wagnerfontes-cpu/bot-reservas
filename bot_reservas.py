@@ -6,12 +6,12 @@ st.set_page_config(page_title="Bot de Reservas", layout="wide")
 st.title("Bot de Reservas")
 
 COLUNAS = {
-    "Informe a data da reserva:": "Data da reserva",
+    "Data de pagamento": "Data de pagamento",
     "Pais": "País",
-    "Informe a sociedade": "Sociedade",
-    "Pagamento ou Recebimento": "Pagamento ou Recebimento",
-    "Informe o banco": "Banco",
-    "Selecione a conta corrente": "Conta corrente",
+    "Sociedade": "Sociedade",
+    "Categoria de Pagamento": "Categoria de Pagamento",
+    "Banco": "Banco",
+    "Conta Corrente": "Conta Corrente",
     "Valor": "Valor",
     "Descrição": "Descrição",
     "Área solicitante": "Área solicitante",
@@ -62,7 +62,7 @@ def ler_planilha(arquivo):
     df = df.rename(columns=COLUNAS)
     df = df[[c for c in COLUNAS.values() if c in df.columns]]
     df = df.dropna(how="all").reset_index(drop=True)
-    if "Data da reserva" in df.columns:
+    if "Data de pagamento" in df.columns:
         def formatar_data(val):
             if pd.isna(val) or str(val).strip() == "":
                 return ""
@@ -75,7 +75,7 @@ def ler_planilha(arquivo):
             except Exception:
                 pass
             return str(val)
-        df["Data da reserva"] = df["Data da reserva"].apply(formatar_data)
+        df["Data de pagamento"] = df["Data de pagamento"].apply(formatar_data)
     if "Valor" in df.columns:
         df["Valor"] = df["Valor"].apply(formatar_valor)
     df = df.astype(str).replace("nan", "")
@@ -92,7 +92,7 @@ def validar_dados(df, checar_justificativa=False):
             if campo not in row or str(row[campo]).strip() == "":
                 erros.append(f"Linha {linha}: campo **{campo}** está vazio.")
 
-        data_str = str(row.get("Data da reserva", "")).strip()
+        data_str = str(row.get("Data de pagamento", "")).strip()
         if data_str:
             data_limpa = data_str.replace("/", "").replace("-", "")
             if len(data_limpa) == 8 and data_limpa.isdigit():
@@ -293,7 +293,7 @@ elif st.session_state.etapa == "concluido":
     else:
         st.success("✅ Dados gravados com sucesso!")
 
-    usuarios = df["User solicitante"].dropna().unique()
+    usuarios = df["User solicitante"].astype(str).unique()
     for username in usuarios:
         email = get_email_from_user(username)
         send_email(email, df)
