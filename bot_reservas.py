@@ -106,7 +106,7 @@ def validar_dados(df, checar_justificativa=False):
         valor_str = str(row.get("Valor", "")).strip()
         if valor_str:
             try:
-                valor = float(valor_str.replace(",", "."))
+                valor = float(valor_str.replace(".", "").replace(",", "."))
                 if valor <= 0:
                     erros.append(f"Linha {linha}: **Valor** deve ser maior que zero.")
             except ValueError:
