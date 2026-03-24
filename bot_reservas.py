@@ -48,6 +48,15 @@ def verificar_duplicata(row):
     # LIMIT 1
     return None  # Retorna None quando não há duplicata, ou um dict com os dados do registro anterior
 
+def formatar_valor(val):
+    if pd.isna(val) or str(val).strip() == "":
+        return ""
+    try:
+        numero = float(str(val).replace(".", "").replace(",", "."))
+        return f"{numero:_.2f}".replace(".", ",").replace("_", ".")
+    except Exception:
+        return str(val)
+
 def ler_planilha(arquivo):
     df = pd.read_excel(arquivo)
     df = df.rename(columns=COLUNAS)
@@ -67,6 +76,8 @@ def ler_planilha(arquivo):
                 pass
             return str(val)
         df["Data da reserva"] = df["Data da reserva"].apply(formatar_data)
+    if "Valor" in df.columns:
+        df["Valor"] = df["Valor"].apply(formatar_valor)
     df = df.astype(str).replace("nan", "")
     return df
 
